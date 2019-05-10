@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Check v2</title>
+    <style>
+        .column-left {
+          float: left;
+          width: 33.333%;
+        }
+
+        .column-right {
+          float: right;
+          width: 33.333%;
+        }
+
+        .column-center {
+          display: inline-block;
+          width: 33.333%;
+        }
+
+    </style>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+
+
+      <script>
+        function postRequest(strURL){
+            var xmlHttp;
+            if(window.XMLHttpRequest){ // For Mozilla, Safari, ...
+                var xmlHttp = new XMLHttpRequest();
+            }
+            else if(window.ActiveXObject){ // For Internet Explorer
+                var xmlHttp = new ActiveXObject("Microsoft.XMLHTTP");
+            }
+            xmlHttp.open('POST', strURL, true);
+            xmlHttp.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            xmlHttp.send(strURL);
+        }
+
+        function call_login(){
+            var username = window.document.f1.username.value;
+            var password = window.document.f1.password.value;
+            var url = "login?user=" + username + "&password=" +password ;
+            postRequest(url);
+        }
+        //Usually, you put script-tags into the head
+        function hello() {
+            //This performs a POST-Request.
+            //Use "$.get();" in order to perform a GET-Request (you have to take a look in the rest-API-documentation, if you're unsure what you need)
+            //The Browser downloads the webpage from the given url, and returns the data.
+            $.get( "http://192.168.1.222:8000/hello", function( data ) {
+                 //As soon as the browser finished downloading, this function is called.
+                 //$('#demo').html(data);
+            });
+        }
+        function goodbye() {
+            //This performs a POST-Request.
+            //Use "$.get();" in order to perform a GET-Request (you have to take a look in the rest-API-documentation, if you're unsure what you need)
+            //The Browser downloads the webpage from the given url, and returns the data.
+            $.get( "http://192.168.1.222:8000/goodbye", function( data ) {
+                 //As soon as the browser finished downloading, this function is called.
+                 //$('#demo').html(data);
+            });
+        }
+    </script>
+
+</head>
+<body>
+<h1>Getting server updates stream</h1>
+<form name="f1" onsubmit="return call_login();">
+<table border="0" bgcolor="#CCCCFF" cellspacing="1" cellpadding="3" width="287">
+<tr>
+<td align="left" colspan="2" width="275"><b><font size="5" color="#000080">Login</font></b></td>
+</tr>
+<tr>
+<td align="right" width="81"><b><font color="#000080">User
+Name:</font></b></td>
+<td width="184"><input type="text" name="username" id="user" size="20" value="" /></td>
+</tr>
+<tr>
+<td align="right" width="81"><b><font color="#000080">Password:</font></b></td>
+<td width="184"><input type="password" name="password" size="20" value="" /></td>
+</tr>
+<tr>
+<td colspan="2" align="center" width="275"><input type="button" name="a1" value="Login" onclick="call_login()"></td>
+</tr>
+</table>
+</form>
+<button onclick="hello()">Hello</button>
+<button onclick="goodbye()">goodbye</button>
+<div class="container">
+  <div class="column-center" id="message"></div>
+  <div class="column-left" id="heartbeat"></div>
+  <div class="column-right" id="admin"></div>
+</div>
+
+<script>
+    var source = new EventSource("{{ url_for('sse.stream') }}");
+    source.addEventListener('heartbeat', function(event) {
+        var data = JSON.parse(event.data);
+        document.getElementById("heartbeat").innerHTML += data['heartbeat'] + "<br>";
+    }, false);
+    source.addEventListener('message', function(event) {
+        var data = JSON.parse(event.data);
+        document.getElementById("message").innerHTML += data['messages'] + "<br>";
+    }, false);
+    source.addEventListener('admin', function(event) {
+        var data = JSON.parse(event.data);
+        document.getElementById("admin").innerHTML += data['admin'] + "<br>";
+    }, false);
+    source.addEventListener('error', function(event) {
+        alert("Failed to connect to event stream. Is Redis running?");
+    }, false);
+  </script>
+</body>
+</html>
